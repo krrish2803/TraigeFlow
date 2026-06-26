@@ -219,12 +219,16 @@ export function createMemoryStore(): DataStore {
 }
 
 export function createPersistentStore(dbPath?: string): DataStore {
-  const path = dbPath || process.env.DATABASE_PATH || "./data/store.json";
   const memory = createMemoryStore();
   if (typeof window !== "undefined") {
-    // Browser: no file system, use in-memory
     return memory;
   }
+  if (process.env.TURSO_DATABASE_URL) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { persistRemoteStore } = require("./persist-remote");
+    return persistRemoteStore(memory);
+  }
+  const path = dbPath || process.env.DATABASE_PATH || "./data/store.json";
   return persistStore(memory, path);
 }
 
