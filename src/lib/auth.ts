@@ -2,8 +2,13 @@ import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Credentials from "next-auth/providers/credentials";
 
+function makeId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET || "signal2fix-dev-secret-key-change-in-production",
+  trustHost: true,
   providers: [
     GitHub,
     Credentials({
@@ -16,7 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = credentials?.email as string;
         const name = (credentials?.name as string) || email?.split("@")[0] || "User";
         if (email && email.includes("@") && email.length > 5) {
-          return { id: crypto.randomUUID(), name, email, image: null };
+          return { id: makeId(), name, email, image: null };
         }
         return null;
       },
