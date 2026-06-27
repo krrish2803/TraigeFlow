@@ -9,7 +9,7 @@ const INTEGRATIONS = [
   { name: "Slack", icon: "S", color: "#4A154B", status: "demo" as const, detail: "Demo mode (real webhook configured)", channel: "#bugs" },
   { name: "Gmail", icon: "G", color: "#EA4335", status: "demo" as const, detail: "Demo mode (mock only)", channel: "Support Inbox" },
   { name: "GitHub", icon: "Gh", color: "#24292E", status: "demo" as const, detail: "Demo mode (real token configured)", channel: "Issues" },
-  { name: "Jira", icon: "J", color: "#0052CC", status: "disconnected" as const, detail: "Not connected", channel: "" },
+  { name: "Jira", icon: "J", color: "#0052CC", status: "demo" as const, detail: "Demo mode (real token configured)", channel: "Issues" },
 ];
 
 const DEMO_SCENARIOS = [
