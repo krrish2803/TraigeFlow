@@ -98,14 +98,6 @@ export default function Hero() {
           >
             See How It Works
           </motion.a>
-          <motion.a
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            href="#features"
-            className="inline-flex px-8 py-3.5 rounded-xl border border-border text-text-secondary text-base font-medium hover:border-primary/30 hover:text-text-primary hover:bg-primary/5 transition-all duration-300"
-          >
-            See How It Works
-          </motion.a>
         </motion.div>
 
         <motion.div

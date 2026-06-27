@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import HowItWorks from "@/components/ui/HowItWorks";
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -22,6 +23,8 @@ export default function Header() {
       </h1>
 
       <div className="flex items-center gap-4">
+        <HowItWorks />
+
         <button className="text-text-muted hover:text-text-secondary transition-colors text-sm px-3 py-1.5 rounded-md border border-border hover:bg-elevated/50">
           <kbd className="text-xs text-text-muted mr-2">⌘K</kbd>
           Search

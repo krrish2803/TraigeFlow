@@ -6,9 +6,9 @@ import { injectDemoSignal, injectCustomSignal } from "@/lib/use-data";
 import { useToast } from "@/components/ui/Toast";
 
 const INTEGRATIONS = [
-  { name: "Slack", icon: "S", color: "#4A154B", status: "connected" as const, detail: "Workspace: acme-corp", channel: "#bugs" },
-  { name: "Gmail", icon: "G", color: "#EA4335", status: "connected" as const, detail: "ayush@gappy.ai", channel: "Support Inbox" },
-  { name: "GitHub", icon: "Gh", color: "#24292E", status: "connected" as const, detail: "acme/backend-repo", channel: "Issues" },
+  { name: "Slack", icon: "S", color: "#4A154B", status: "demo" as const, detail: "Demo mode (real webhook configured)", channel: "#bugs" },
+  { name: "Gmail", icon: "G", color: "#EA4335", status: "demo" as const, detail: "Demo mode (mock only)", channel: "Support Inbox" },
+  { name: "GitHub", icon: "Gh", color: "#24292E", status: "demo" as const, detail: "Demo mode (real token configured)", channel: "Issues" },
   { name: "Jira", icon: "J", color: "#0052CC", status: "disconnected" as const, detail: "Not connected", channel: "" },
 ];
 
@@ -24,6 +24,7 @@ const DEMO_SCENARIOS = [
 export default function SettingsPage() {
   const { showToast } = useToast();
   const [injecting, setInjecting] = useState<string | null>(null);
+  const [bulkSeeding, setBulkSeeding] = useState(false);
   const [customSource, setCustomSource] = useState("slack");
   const [customBody, setCustomBody] = useState("");
   const [customAuthor, setCustomAuthor] = useState("demo-user");
@@ -42,6 +43,22 @@ export default function SettingsPage() {
       showToast("Failed to inject signal", "error");
     }
     setInjecting(null);
+  };
+
+  const handleBulkSeed = async () => {
+    setBulkSeeding(true);
+    try {
+      const res = await fetch("/api/seed", { method: "POST" });
+      const result = await res.json();
+      if (result.ok) {
+        showToast(`Seeded ${result.seeds.signals} signals, ${result.seeds.drafts} drafts`, "success");
+      } else {
+        showToast("Failed to seed data", "error");
+      }
+    } catch {
+      showToast("Failed to seed data", "error");
+    }
+    setBulkSeeding(false);
   };
 
   const handleCustomInject = async () => {
@@ -83,9 +100,9 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-display font-semibold text-text-primary">{integration.name}</h3>
                     <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${integration.status === "connected" ? "bg-success animate-pulse" : "bg-text-muted"}`} />
-                      <span className={`text-xs ${integration.status === "connected" ? "text-success" : "text-text-muted"}`}>
-                        {integration.status === "connected" ? "Connected" : "Disconnected"}
+                      <div className={`w-2 h-2 rounded-full ${integration.status === "demo" ? "bg-warn" : "bg-text-muted"}`} />
+                      <span className={`text-xs ${integration.status === "demo" ? "text-warn" : "text-text-muted"}`}>
+                        {integration.status === "demo" ? "Demo Mode" : "Disconnected"}
                       </span>
                     </div>
                   </div>
@@ -93,11 +110,8 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {integration.status === "connected" ? (
-                  <>
-                    <button className="px-3 py-1.5 rounded-lg border border-border text-xs text-text-secondary hover:bg-elevated/50">Configure</button>
-                    <button className="px-3 py-1.5 rounded-lg border border-border text-xs text-text-muted hover:text-secondary">Disconnect</button>
-                  </>
+                {integration.status === "demo" ? (
+                  <span className="px-3 py-1.5 rounded-lg border border-border text-xs text-text-muted">Demo Only</span>
                 ) : (
                   <button className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90">Connect</button>
                 )}
@@ -141,7 +155,23 @@ export default function SettingsPage() {
         className="mt-8 p-5 rounded-xl bg-surface border border-border"
       >
         <h3 className="text-sm font-display font-semibold text-text-primary mb-1">Demo Mode</h3>
-        <p className="text-xs text-text-secondary mb-4">Inject pre-defined complaint scenarios to test the full pipeline.</p>
+        <p className="text-xs text-text-secondary mb-4">
+          Inject pre-defined complaint scenarios to test the full pipeline. No real credentials required — runs in mock mode.
+        </p>
+
+        <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
+          <span className="text-primary text-sm">⚡</span>
+          <p className="text-xs text-text-secondary flex-1">
+            <strong className="text-primary">Quick start for judges:</strong> Click <strong>&quot;Load All Demo Data&quot;</strong> below to seed 14 realistic signals and run the full Lemma pipeline instantly.
+          </p>
+          <button
+            onClick={handleBulkSeed}
+            disabled={bulkSeeding}
+            className="px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
+          >
+            {bulkSeeding ? "Seeding…" : "Load All Demo Data"}
+          </button>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           {DEMO_SCENARIOS.map((scenario) => (

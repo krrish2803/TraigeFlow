@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import ActivityFeed from "@/components/activity/ActivityFeed";
 import { useDashboard } from "@/lib/use-data";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
@@ -14,6 +15,14 @@ const trendData = [
   { day: "Fri", signals: 6, clusters: 1, drafts: 0 },
   { day: "Sat", signals: 3, clusters: 0, drafts: 0 },
   { day: "Sun", signals: 9, clusters: 3, drafts: 1 },
+];
+
+const WORKFLOW_STEPS = [
+  { label: "Intake", icon: "⊞", href: "/inbox", color: "text-blue-400" },
+  { label: "Triage", icon: "⟐", href: "/clusters", color: "text-yellow-400" },
+  { label: "Draft", icon: "⊟", href: "/drafts", color: "text-purple-400" },
+  { label: "Approve", icon: "✓", href: "/drafts", color: "text-green-400" },
+  { label: "Release", icon: "↑", href: "/releases", color: "text-orange-400" },
 ];
 
 export default function DashboardPage() {
@@ -59,6 +68,79 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Judge intro banner — shown always */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-primary/5 to-secondary/5 border border-primary/10 rounded-xl p-5"
+      >
+        <div className="flex items-start gap-4">
+          <div className="hidden sm:flex w-10 h-10 rounded-xl bg-primary/10 items-center justify-center text-primary text-lg shrink-0">
+            ⚡
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-sm font-display font-semibold text-text-primary mb-1">
+              Signal2Fix — AI Bug Triage powered by Lemma
+            </h2>
+            <p className="text-xs text-text-secondary leading-relaxed mb-3">
+              Turn Slack/Gmail complaints into reviewed GitHub/Jira action.
+              <strong className="text-primary"> Lemma</strong> powers the full pipeline: intake → triage → draft → approval → release risk.
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              {isEmpty ? (
+                <>
+                  <button
+                    onClick={handleSeed}
+                    disabled={seeding}
+                    className="px-4 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {seeding ? "Loading…" : "Load Demo Data (recommended)"}
+                  </button>
+                  <Link
+                    href="/settings"
+                    className="px-4 py-1.5 rounded-lg border border-border text-xs text-text-secondary hover:text-text-primary hover:bg-elevated/50 transition-colors"
+                  >
+                    Inject Single Signal
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/settings"
+                    className="px-4 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                  >
+                    + Inject Demo Signal
+                  </Link>
+                  <Link
+                    href="/inbox"
+                    className="px-4 py-1.5 rounded-lg border border-border text-xs text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    Go to Inbox →
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {/* Workflow steps */}
+        <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border/50">
+          {WORKFLOW_STEPS.map((step, i) => (
+            <span key={step.label} className="flex items-center gap-1">
+              <Link
+                href={step.href}
+                className="text-[10px] font-medium uppercase tracking-wider text-text-muted hover:text-text-primary transition-colors flex items-center gap-1"
+              >
+                <span className={step.color}>{step.icon}</span>
+                {step.label}
+              </Link>
+              {i < WORKFLOW_STEPS.length - 1 && (
+                <span className="text-text-muted text-[10px]">→</span>
+              )}
+            </span>
+          ))}
+        </div>
+      </motion.div>
+
       {isEmpty && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}

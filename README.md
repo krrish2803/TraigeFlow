@@ -1,6 +1,17 @@
-# TriageFlow
+# TriageFlow / Signal2Fix
 
-AI-powered bug triage and release operations platform. Ingest signals from Slack, Gmail, GitHub, and Jira — automatically classify, cluster, triage, and generate structured engineering issues with human-in-the-loop approval.
+AI-powered bug triage and release operations platform — powered by **Lemma**. Ingest signals from Slack, Gmail, GitHub, and Jira — automatically classify, cluster, triage, and generate structured engineering issues with human-in-the-loop approval.
+
+> **This project is a [Lemma](https://lemma.work) hackathon submission.**  
+> The entire backend pipeline runs via Lemma agents, workflows, and durability layer.
+
+---
+
+## Project Summary
+
+**Signal2Fix** (branded as TriageFlow internally) is an AI operator that takes raw bug reports, support complaints, and feature requests from 4 sources (Slack, Gmail, GitHub, Jira) and runs them through a multi-agent Lemma workflow to produce reviewed, approved, execution-ready engineering issues.
+
+**One-line pitch:** Turn Slack/Gmail complaints into reviewed GitHub/Jira action — powered by Lemma.
 
 ---
 
@@ -16,7 +27,7 @@ Without automation, every signal requires manual triage: reading, classifying, d
 
 ## Solution
 
-TriageFlow is an AI operator that:
+TriageFlow is an AI operator powered by **Lemma** that:
 
 1. **Ingests** signals from 4 sources (Slack, Gmail, GitHub, Jira) into a unified normalized model
 2. **Classifies** each signal as bug, feature, question, or noise with urgency and product area
@@ -283,19 +294,123 @@ All agents are AI-first: they attempt to call the NVIDIA API with structured JSO
 
 ---
 
-## Tech Stack
+## How Lemma Is Used
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript (strict mode) |
-| Auth | NextAuth v5 (GitHub OAuth + Credentials) |
-| Styling | TailwindCSS |
-| AI | NVIDIA API (`meta/llama-3.1-8b-instruct`) |
-| Persistence | File-based JSON (zero-dependency) |
-| State | In-memory Map store + atomic JSON snapshots |
-| Testing | Vitest (189 tests) |
-| Tunneling | ngrok |
+The entire backend pipeline runs through **Lemma** — the core engine at `src/lib/lemma/`:
+
+| Lemma Component | What It Does |
+|----------------|-------------|
+| **Lemma Agents** (7) | Intake, Classification, Similarity, Triage, Draft, Review, Release Risk — all structured JSON-in/JSON-out |
+| **Lemma Workflows** (5) | `ingestSignalWorkflow`, `triageSignalWorkflow`, `approveDraftWorkflow`, `rejectDraftWorkflow`, `recomputeReleaseSummaryWorkflow` — durable, async |
+| **Lemma Store** | In-memory state with atomic JSON snapshots (file-based or Turso for serverless) |
+| **Lemma Surfaces** (4) | Slack, Gmail, GitHub, Jira adapters for downstream actions |
+| **Lemma Client** | Facade that wires agents → workflows → store → surfaces |
+| **Lemma Persistence** | `persist.ts` (file-based JSON) + `persist-remote.ts` (Turso LTMP) |
+
+Every agent output is a structured JSON object (not unstructured chat). Every workflow is durable (can be extended with Saga/rollback patterns). The approval gate lives in Lemma workflow state as an `Approval` entity — not only in the UI.
+
+---
+
+## Demo Instructions (for Judges)
+
+The app works fully in **demo/mock mode** — no real credentials needed.
+
+### Quick Demo Path (2 minutes)
+
+1. **Open the app** → Sign in with any email (credentials mode) or GitHub OAuth
+2. **Dashboard** → Click "Load Demo Data" (or navigate to **Settings** → "Load All Demo Data")
+3. **Inbox** → See 14 injected signals from Slack, Gmail, GitHub, and Jira
+4. **Clusters** → See how signals are grouped; click "Run Triage → Generate Draft" on any cluster
+5. **Drafts** → Review the AI-generated issue; click **Approve** or **Reject**
+6. **Releases** → Click "Generate Release Digest" to see the aggregated risk assessment
+
+### Sources Used in Demo
+
+| Source | Signals |
+|--------|---------|
+| Slack | iOS login crash, onboarding blank, OAuth broken, thumbs up, thanks, ok |
+| Gmail | Payment timeout, onboarding blank, dark mode feature request |
+| GitHub | iOS OAuth crash, API timeout, dark mode request |
+| Jira | (demo injects from Slack/Gmail/GitHub — webhook must be configured for real) |
+
+---
+
+## Mock Mode vs Real Integrations
+
+| Integration | Mock/Demo | Real |
+|------------|-----------|------|
+| **Slack** | ✅ Demo mode works without credentials | Set `SLACK_SIGNING_SECRET`, `SLACK_BOT_TOKEN`, `SLACK_SUPPORT_CHANNEL_IDS` for webhook ingestion |
+| **Gmail** | ✅ Demo mode (mock only — no Google Cloud setup) | Requires Google Cloud service account + Pub/Sub topic |
+| **GitHub** | ✅ Demo mode works without credentials | Set `GITHUB_TOKEN`, `GITHUB_OWNER`, `GITHUB_REPO` for issue creation |
+| **Jira** | ✅ Demo mode works without credentials | Set `JIRA_INSTANCE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY` for issue creation |
+| **NVIDIA AI** | ✅ Deterministic fallback when no key | Set `NVIDIA_API_KEY` for AI-powered agent outputs |
+| **Auth** | ✅ Credentials mode (any email) works out of box | Set `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` for GitHub OAuth |
+
+The app runs fully in demo mode with no environment variables configured — all agents fall back to deterministic heuristics.
+
+---
+
+## Deployment Notes
+
+### Environment Variables
+
+**Required (minimal — demo mode works with these only):**
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_SECRET` | Random 64-char hex string (`openssl rand -hex 32`) |
+
+**Optional — AI enhancement:**
+
+| Variable | Description |
+|----------|-------------|
+| `NVIDIA_API_KEY` | NVIDIA API key for AI agents (get at [build.nvidia.com](https://build.nvidia.com)) |
+| `NVIDIA_MODEL` | Model name (defaults to `meta/llama-3.1-8b-instruct`) |
+
+**Optional — real integrations:**
+
+| Variable | Description |
+|----------|-------------|
+| `SLACK_SIGNING_SECRET` | Slack App signing secret |
+| `SLACK_BOT_TOKEN` | Slack bot token (`xoxb-*`) |
+| `SLACK_SUPPORT_CHANNEL_IDS` | Comma-separated Slack channel IDs |
+| `GITHUB_TOKEN` | GitHub personal access token (repo scope) |
+| `GITHUB_OWNER` | GitHub repo owner |
+| `GITHUB_REPO` | GitHub repo name |
+| `AUTH_GITHUB_ID` | GitHub OAuth App client ID |
+| `AUTH_GITHUB_SECRET` | GitHub OAuth App client secret |
+| `JIRA_INSTANCE_URL` | Atlassian instance URL |
+| `JIRA_EMAIL` | Atlassian account email |
+| `JIRA_API_TOKEN` | Atlassian API token |
+| `JIRA_PROJECT_KEY` | Jira project key |
+| `JIRA_WEBHOOK_SECRET` | Jira webhook verification secret |
+
+**Optional — persistence:**
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_PATH` | JSON file path (defaults to `./data/store.json`) |
+| `TURSO_DATABASE_URL` | Turso database URL for serverless persistence |
+| `TURSO_AUTH_TOKEN` | Turso auth token |
+
+### Hosting on Lemma (lemma.work)
+
+1. Push the repo to GitHub
+2. Connect the repo on [lemma.work](https://lemma.work)
+3. Set required env vars in the Lemma dashboard (at minimum `AUTH_SECRET`)
+4. The app auto-deploys and is available at a Lemma-managed URL
+
+---
+
+## Judge Access Checklist
+
+If hosting on **Lemma** for the hackathon submission:
+
+- [ ] Host the app on [lemma.work](https://lemma.work)
+- [ ] Set `AUTH_SECRET` env var in Lemma dashboard
+- [ ] Grant pod/app access to **ayush@gappy.ai**
+- [ ] Share the live app link in the submission form
+- [ ] (Optional) Set `NVIDIA_API_KEY` for AI-powered agent outputs
 
 ---
 
